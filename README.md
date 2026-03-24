@@ -12,6 +12,12 @@ Open source. Terminal-native. Built with **Bun** and **OpenTUI**. If you want vi
 
 Community-built and unofficial. This project is not affiliated with or endorsed by xAI, and it is not the official Grok CLI.
 
+Example image generated through the CLI:
+
+![Generated monochrome cat logo](./assets/grok-generated-cat-logo.jpg)
+
+Saved from a local `generate_image` run in this workspace.
+
 https://github.com/user-attachments/assets/7ca4f6df-50ca-4e9c-91b2-d4abad5c66cb
 
 ---
