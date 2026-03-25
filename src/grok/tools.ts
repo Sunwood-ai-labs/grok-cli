@@ -24,6 +24,7 @@ interface CreateToolsOptions {
   readDelegation?: (id: string) => Promise<ToolResult>;
   listDelegations?: () => Promise<ToolResult>;
   subagents?: CustomSubagentConfig[];
+  sendTelegramFile?: (filePath: string) => Promise<ToolResult>;
 }
 
 export function createTools(
@@ -226,23 +227,38 @@ export function createTools(
 
   const tools: ToolSet = { ...base };
 
+  if (options.sendTelegramFile) {
+    const sendFile = options.sendTelegramFile;
+    tools.telegram_send_file = tool({
+      description:
+        "Send a local file to the current Telegram chat as an attachment. Use this to deliver generated images, videos, documents, or any other file to the user in Telegram. The file is uploaded directly — the user receives it as a Telegram media message or document.",
+      inputSchema: z.object({
+        path: z.string().describe("Absolute or cwd-relative path to the local file to send"),
+      }),
+      execute: async ({ path: filePath }) => {
+        const resolved = filePath.startsWith("/") ? filePath : `${cwd()}/${filePath}`;
+        return sendFile(resolved);
+      },
+    });
+  }
+
   if (options.runTask) {
     const customNames = (options.subagents ?? loadValidSubAgents()).map((agent) => agent.name);
-    const taskAgentEnum = ["general", "explore", ...customNames] as [string, ...string[]];
+    const taskAgentEnum = ["general", "explore", "vision", ...customNames] as [string, ...string[]];
     const customHint =
       customNames.length > 0
         ? ` You may also use these user-defined sub-agents by exact name: ${customNames.join(", ")}.`
         : "";
 
     tools.task = tool({
-      description: `Delegate a focused foreground task to a sub-agent. Prefer this proactively for review, research, investigation, and code quality work instead of waiting for the user to request a sub-agent. Use \`general\` for multi-step execution and \`explore\` for fast read-only investigation.${customHint} Provide a short description plus a detailed prompt for the child agent.`,
+      description: `Delegate a focused foreground task to a sub-agent. Prefer this proactively for review, research, investigation, and code quality work instead of waiting for the user to request a sub-agent. Use \`general\` for multi-step execution, \`explore\` for fast read-only investigation, and \`vision\` for image validation.${customHint} Provide a short description plus a detailed prompt for the child agent.`,
       inputSchema: z.object({
         agent: z
           .enum(taskAgentEnum)
           .default("general")
           .describe(
             customNames.length > 0
-              ? "Built-in general or explore, or a configured custom sub-agent name from user settings"
+              ? "Built-in general, explore, or vision, or a configured custom sub-agent name from user settings"
               : "Which sub-agent to use",
           ),
         description: z.string().describe("A short label for the delegated task, such as 'Deep code quality analysis'"),
